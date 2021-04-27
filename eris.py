@@ -15,6 +15,8 @@ if arg_len < 3:
     print("     Methods:")
     print("      - size")
     print("         ↳ Prints file size in hexadecimal.")
+    print("      - whiff <chunks>")
+    print("         ↳ Prints a visual representation of the corruption.")
     print("      - set <where> <value>")
     print("         ↳ Set a byte to a value in the range of [0x00, 0xFF].")
     print("      - copy <how-much> <from> <to>")
@@ -111,6 +113,31 @@ def method_recover(start, end):
 
 method_recover.args = 2
 
+def method_whiff(chunks):
+    chunks = int(chunks)
+    def do(orig, buf):
+        size = len(buf)
+        
+        chunk_size = math.floor(size / chunks)
+        
+        buffer_cursor = 0
+        orig.seek(0, os.SEEK_SET)
+
+        # compare
+        for unit in range(0, chunks):
+            orig_chunk = bytearray(orig.read(chunk_size))
+            corr_chunk = buf[buffer_cursor:buffer_cursor+chunk_size]
+            buffer_cursor = buffer_cursor + chunk_size
+
+            print("%c" % ('░' if orig_chunk == corr_chunk else '╳'), end="")
+        
+        # newline
+        print()
+
+    return do
+
+method_whiff.args = 1
+
 # METHODS ENDED
 
 
@@ -133,6 +160,8 @@ def read_method_and_args(index):
         method_maker = method_swap
     elif method_name == "recover":
         method_maker = method_recover
+    elif method_name == "whiff":
+        method_maker = method_whiff
     else:
         print("Unknown method:", method_name)
         exit(0xBAD)
